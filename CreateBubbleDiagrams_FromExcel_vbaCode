@@ -1,0 +1,212 @@
+
+
+'Developed by Jeffrey Rynes
+
+
+Function inc(ByRef data1, ByRef data2)
+    data = data1 + data2
+    inc = data
+End Function
+
+Function incByOne(ByRef data)
+    data = data + 1
+    incByOne = data
+End Function
+
+
+Function UniqueVals(Col As Variant, Optional SheetName As String = "") As Variant
+    'Return a 1-based array of the unique values in column Col
+
+    Dim D As Variant, A As Variant, v As Variant
+    Dim i As Long, n As Long, k As Long
+    Dim ws As Worksheet
+
+    If Len(SheetName) = 0 Then
+        Set ws = ActiveSheet
+    Else
+        Set ws = Sheets(SheetName)
+    End If
+
+    n = ws.Cells(Rows.Count, Col).End(xlUp).Row
+    ReDim A(1 To n)
+    Set D = CreateObject("Scripting.Dictionary")
+
+    For i = 1 To n
+        v = CStr(ws.Cells(i, Col).Value)
+        If Not D.Exists(v) Then
+            D.Add v, 0
+            k = k + 1
+            A(k) = k
+        End If
+    Next i
+
+    ReDim Preserve A(1 To k)
+    UniqueVals = A
+
+End Function
+
+
+
+Function UniqueItems(ArrayIn) As Variant
+    Dim vData As Variant
+    Dim vNewdata() As Variant
+    Dim colUniques As Collection
+    Dim lCt As Long
+    If TypeName(ArrayIn) = "Range" Then
+        vData = ArrayIn.Value
+    Else
+        vData = ArrayIn
+    End If
+    Set colUniques = New Collection
+    'assuming a one-column range
+
+    On Error Resume Next 'ignore duplicates
+
+    For lCt = 1 To UBound(vData, 1)
+        colUniques.Add vData(lCt, 1), CStr(vData(lCt, 1))
+    Next
+    ReDim vNewdata(1 To 1, 1 To colUniques.Count)
+    For lCt = 1 To colUniques.Count
+        vNewdata(1, lCt) = colUniques(lCt)
+    Next
+    UniqueItems = vNewdata
+End Function
+
+    Public Function CountUnique(rng As Range) As Dictionary
+        Dim dict As Dictionary
+        Dim cell As Range
+        Set dict = New Dictionary
+        For Each cell In rng.Cells
+             If Not dict.Exists(cell.Value) Then
+                dict.Add cell.Value, 0
+            End If
+        Next
+        Set CountUnique = dict
+    End Function
+
+
+Sub helloWorld()
+    Dim iapp As New Illustrator.Application
+    Dim idoc As Illustrator.Document
+    Dim iframe As Illustrator.TextFrame
+    Dim dlbMin, dblMax As Double
+    Set idoc = iapp.ActiveDocument
+    Dim previousCircleSize, circleWidth, circleHeight, leftIncrement, leftIncrementCounter, minNormalValue, maxNormalValue, offsetColumnLength, uniqueItemsList As Double
+    Dim cellValue As Variant
+    Dim uniqueBuildngSubZones As Variant
+    Dim newGroup As Illustrator.GroupItem
+    Dim fnt As Illustrator.TextFont
+    Dim n As Long, i As Long, j As Long
+    Dim Ar As Variant
+    
+    n = Cells(Rows.Count, "A").End(xlUp).Row
+    j = 2
+    offsetColumnLength = 10
+    
+    
+    'Get min and max range
+    Set rng = Application.ActiveSheet.Range("B2:B100")
+    'Get minimum value
+    dblMin = Application.WorksheetFunction.Min(rng)
+    'Get maximum value
+    dblMax = Application.WorksheetFunction.Max(rng)
+    'Normalize the Min and max values according to the user input
+    minNormalValue = CDbl(InputBox("What size would you like the smallest circle to be, in inches?"))
+    
+    maxNormalValue = CDbl(InputBox("What size would you like the largest circle to be, in inches?"))
+    
+    'Release Excel document range after getting the min and max
+    Set rng = Nothing
+    
+    previousCircleSize = 0
+    leftIncrementCounter = 0
+    
+    'SetColorByBuildingZone - Get unique items in building zone list, then set colors
+    uniqueBuildngSubZones = UniqueVals("A")
+    
+    
+    'AdjustColorByBuildingSubZone - Adjust opacity
+    Set Ar = CountUnique(Application.ActiveSheet.Range("A2:A100"))
+    uniqueItemsList = Ar.Count
+    
+    For i = 2 To n
+    
+        'Horizontal increment - every 10 items, shift left
+        If i Mod offsetColumnLength = 1 Then
+        
+            leftIncrementCounter = incByOne(leftIncrementCounter)
+        
+            leftIncrement = leftIncrementCounter * 350
+            
+            previousCircleSize = 0
+            
+        End If
+    
+        'Create circles and text boxes below
+        If Cells(i, "B").Value <> 0 Then
+        
+            'Create group
+            'Set newGroup = idoc.GroupItems.Add
+            
+            circleSize = Cells(i, "B").Value
+            
+            'Normalize circle values
+            circleSizeNormalized = ((circleSize - dblMin) / (dblMax - dblMin)) * (maxNormalValue - minNormalValue) + minNormalValue
+            
+            cellMovement = -10
+            
+            Set icircle = idoc.PathItems.Add()
+            
+            circleWidth = 72 * circleSizeNormalized
+            
+            circleHeight = circleWidth
+            
+            'Set icircle = idoc.PathItems.Ellipse(Top, Left, Width, Height)
+            'Set icircle = newGroup.PathItems.Add(idoc.PathItems.Ellipse(-previousCircleSize, leftIncrement, circleWidth, circleHeight))
+            Set icircle = idoc.PathItems.Ellipse(-previousCircleSize, leftIncrement, circleWidth, circleHeight)
+            
+            'Create text box
+            'Set iframe = newGroup.TextFrames.Add
+            Set iframe = idoc.TextFrames.Add
+            'Get value to write to text box
+            cellValue = Application.ActiveSheet.Cells(i, "A").Value & vbCrLf & Application.ActiveSheet.Cells(i, "B").Value
+            'Write the value to the text box
+            iframe.Contents = cellValue
+            'set font to 'italics' within the same font family?
+            'Set fnt = iapp.TextFonts("Arial-re")
+            'Set fnt = iapp.TextFonts.GetFontByName("Arial-Regular")
+            'iapp.Documents(1).TextFrames(1).TextRange.CharacterAttributes.TextFont = iapp.TextFonts.Item(fnt.Name)
+            'iframe.TextRange.CharacterAttributes.TextFont = fnt
+            iframe.TextRange.CharacterAttributes.Size = 10
+
+            
+            'Move the text box to the circle position
+            iframe.Top = -(previousCircleSize)
+            
+            'First row offset different
+            If i < offsetColumnLength Then
+                'TODO add method below
+                
+            End If
+            
+            iframe.Left = leftIncrement
+            
+            'Store the previous circle size for reference in the next loop
+            previousCircleSize = inc(circleHeight, previousCircleSize) + 100
+            
+            'Create Group
+            
+            'Release variables for next loop
+            Set icircle = Nothing
+            Set iframe = Nothing
+            'Set newGroup = Nothing
+            
+        End If
+        
+    Next i
+    
+    'Release items
+    Set iframe = Nothing
+    Set idoc = Nothing
+    Set iapp = Nothing
+End Sub
