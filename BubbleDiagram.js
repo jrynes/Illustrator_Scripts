@@ -6,35 +6,6 @@
 //Apply White Stroke
  
  separateFillsByColor();
- 
-//packageDesign();
- 
- //Function below is not currenty used
-//~ function packageDesign() {       // Create new layer based off of file name and move all layers underneath.
-//~                 var sourceDoc = app.activeDocument;
-//~                 var fileName = sourceDoc.name;
-//~                 var newLayer = "";
-//~                 var newName = "";
-//~                 var dot = fileName.lastIndexOf('.');
-//~                 var myLayerCount = sourceDoc.layers.length
-//~                 newName = fileName.substring(0, dot);
-//~                 mast = sourceDoc.layers.add()
-//~                 mast.name = newName
-//~  
-//~           if ( app.documents.length == 0 ) { return; }
-
-//~             for(var myCounter = 0; myCounter < myLayerCount+1; myCounter++){
-//~                var selectLayer = sourceDoc.layers[myCounter]
-//~                        
-//~                    selectLayer.visible=true
-//~                    selectLayer.locked=false
-//~             }      
-//~  
-//~             for ( var  i = sourceDoc.layers.length-1; i >= 1; i-- ) {
-//~  
-//~                    sourceDoc.layers[i].move( mast, ElementPlacement.PLACEATBEGINNING )
-//~           };
-//~ };
 
 function onlyUnique(value, index, self) { 
     return self.indexOf(value) === index;
@@ -54,13 +25,6 @@ function uniques(array) {
     }
     return result;
 };
-
-//Revised Get Unique Items Method
-//~ Array.prototype.unique = function() {
-//~   return this.filter(function (value, index, self) { 
-//~     return self.indexOf(value) === index;
-//~   });
-//~ }
 
 //Revised Get Unique Items Method
 function uniq(a) {
@@ -134,15 +98,11 @@ function separateFillsByColor() {
             var item = targetLayer.pathItems[i];
             colorList.push(item.fillColor.spot.name)
             $.writeln("Test colour ",item.fillColor.spot.colorType)
-            //sourceDoc.selection.add(item)
-            //app.executeMenuCommand('Effect:Stylize:Round Corners')
     }
 
 //Get unique fill colors
 var uniqueColors = uniques(colorList)
 $.writeln("Unique Color List: ",uniqueColors)
-//var uniqueColors = uniq(colorList(str.split('')));
-//var uniqueColors = colorList.unique();
 
 $.writeln("Number of Unique Colors",uniqueColors.length)
 
@@ -152,28 +112,6 @@ $.writeln("Number of Unique Colors",uniqueColors.length)
         var myLayer = sourceDoc.layers.add();
         
         myLayer.name = uniqueColors[i]
-        
-        //Create Object Style for each layer
-
-        //SCRIPTS CANNOT CREATE OBJECT STYLES
-
-//~         var myPlainTextObjectStyle = sourceDoc.graphicStyles.add();  
-//~             myPlainTextObjectStyle.properties = {  
-//~                  name : uniqueColors[i],  
-//~                  enableFill : true,  
-//~                  enableStroke : true,  
-//~                  //enableStrokeAndCornerOptions : false,  
-//~                  //enableTextFrameBaselineOptions : true,  
-//~                  //enableTextFrameGeneralOptions : true,  
-//~                  fillColor : myDocument.swatches.item(i),  
-//~                  strokeColor : strokeColor,  
-//~                  textFramePreferences : {   
-//~                       firstBaselineOffset : FirstBaseline.FIXED_HEIGHT,  
-//~                       minimumFirstBaselineOffset : myLeading,  
-//~                       textColumnCount : 1,  
-//~                       verticalJustification : VerticalJustification.TOP_ALIGN   
-//~                  }  
-//~             //} 
             
             //Add items with matching colors to the newly created layer
            for(var x = 0; x < targetLayer.pathItems.length; x++) {
@@ -186,6 +124,7 @@ $.writeln("Number of Unique Colors",uniqueColors.length)
                         item.strokeColor = strokeColor;  
                         item.strokeWidth = 2;
                         $.writeln("Target layer path item match: ", item.fillColor.spot.name + " - " + myLayer.name)
+                        //Optional code below to apply rounded corners to the object
                         //Stylize > Round Corners:
                         //app.executeMenuCommand('Live Adobe Round Corners');
                         //myPlainTextObjectStyle.applyTo(item);
@@ -212,7 +151,6 @@ while (targetLayer.pathItems.length != 0) {
                                     item.stroked = true;  
                                     item.strokeColor = strokeColor;  
                                     item.strokeWidth = 2;
-                                    //var itemCopy = item.duplicate(item)
                             }
                         }
                 }
@@ -231,10 +169,6 @@ while (targetLayer.compoundPathItems.length != 0) {
                             {
                                     $.writeln("Target layer path item second round match: ", item.fillColor.spot.name + " - " + sourceDoc.layers[y].name)
                                     targetLayer.compoundPathItems[x].move(sourceDoc.layers[y], ElementPlacement.PLACEATEND);
-                                    //item.stroked = true;  
-                                   // item.strokeColor = strokeColor;  
-                                    //item.strokeWidth = 2;
-                                    //var itemCopy = item.duplicate(item)
                             }
                         }
                 }
