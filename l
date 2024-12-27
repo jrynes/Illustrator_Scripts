@@ -1,19 +1,12 @@
 const { createProxyMiddleware } = require('http-proxy-middleware');
 const history = require('connect-history-api-fallback');
 
-// Pattern to exclude static file requests
+// Pattern for excluding static files
 const staticRequestPattern = /^(\/)?(index\.html|favicon\.ico|.*\.css|.*\.js|runtime\..*\.js|polyfills\..*\.js|main\..*\.js)$/;
 
 // Specific Proxy Middleware
 const specificProxy = createProxyMiddleware(['/filing', '/retrieval', '/pc-manage', '/idaas'], {
-  target: (path) => {
-    if (path.startsWith('/idaas')) {
-      return 'https://idaas-services-fqt.etc.uspto.gov';
-    }
-    if (path.startsWith('/filing') || path.startsWith('/retrieval') || path.startsWith('/pc-manage')) {
-      return 'https://pctr.fqt.uspto.gov';
-    }
-  },
+  target: 'https://default-target.com', // Required default target
   changeOrigin: true,
   secure: false,
   logLevel: 'debug',
@@ -22,25 +15,34 @@ const specificProxy = createProxyMiddleware(['/filing', '/retrieval', '/pc-manag
       console.log(`[Specific Proxy] Excluding request: ${req.url}`);
       return false; // Exclude static requests
     }
-    return true; // Proxy all other requests
+    return true;
+  },
+  router: (req) => {
+    if (req.url.startsWith('/idaas')) {
+      return 'https://idaas-services-fqt.etc.uspto.gov';
+    }
+    if (req.url.startsWith('/filing') || req.url.startsWith('/retrieval') || req.url.startsWith('/pc-manage')) {
+      return 'https://pctr.fqt.uspto.gov';
+    }
+    return 'https://default-target.com'; // Fallback
   },
   pathRewrite: {
-    '^/pc-manage': '/manage', // Rewrite /pc-manage to /manage
+    '^/pc-manage': '/manage',
   },
 });
 
-// Dynamic .gov Proxy Middleware
+// Dynamic Proxy Middleware
 const dynamicGovProxy = createProxyMiddleware({
+  target: 'https://default-gov-target.com', // Required default target
   changeOrigin: true,
   secure: false,
   logLevel: 'debug',
   pathFilter: (path, req) => {
-    // Exclude static file requests
     if (staticRequestPattern.test(req.url)) {
       console.log(`[Dynamic Proxy] Excluding static request: ${req.url}`);
       return false;
     }
-    // Allow only .gov requests
+
     const isGovRequest = req.headers.host && req.headers.host.endsWith('.gov');
     console.log(`[Dynamic Proxy] Is .gov request? ${isGovRequest}`);
     return isGovRequest;
@@ -48,23 +50,21 @@ const dynamicGovProxy = createProxyMiddleware({
   router: (pathname, req) => {
     if (!req.headers || !req.headers.host) {
       console.error('[Dynamic Proxy Router] Missing host header in request.');
-      return null; // Gracefully handle missing headers
+      return 'https://fallback-gov-target.com';
     }
-
-    // Generate the target dynamically
     const targetUrl = `https://${req.headers.host}`;
     console.log(`[Dynamic Proxy Router] Routing ${pathname} to ${targetUrl}`);
     return targetUrl;
   },
 });
 
-// Static Middleware for History API Fallback
+// Static Middleware
 const staticMiddleware = history({
-  disableDotRule: true, // Ensures proper handling of paths with dots
-  verbose: true, // Logs rewrites
+  disableDotRule: true,
+  verbose: true,
 });
 
-// Debugging Middleware
+// Debug Middleware
 const logMiddleware = (name) => (req, res, next) => {
   console.log(`[${name}] Handling request: ${req.method} ${req.url}`);
   next();
@@ -72,17 +72,17 @@ const logMiddleware = (name) => (req, res, next) => {
 
 // Lite Server Configuration
 const LITE_SERVER_CONFIG = {
-  files: 'dist/pcui/**/*.*', // Watch for file changes
+  files: 'dist/pcui/**/*.*',
   server: {
     baseDir: 'dist/pcui',
     index: 'index.html',
     middleware: [
       logMiddleware('Static Middleware'),
-      staticMiddleware, // Serves static files
+      staticMiddleware,
       logMiddleware('Specific Proxy'),
-      specificProxy, // Handles specific routes
+      specificProxy,
       logMiddleware('Dynamic Proxy'),
-      dynamicGovProxy, // Handles .gov requests
+      dynamicGovProxy,
     ],
   },
 };
